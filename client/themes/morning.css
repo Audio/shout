@@ -38,6 +38,14 @@ QUIT #d0907d
   color: #cccccc;
 }
 
+#settings select {
+  background: inherit;
+}
+
+#chat .sidebar {
+  background: #333c4a;
+}
+
 #chat .count {
   background-color: #2e3642;
 }
