@@ -50,8 +50,10 @@ $(function() {
 
 	$(".tse-scrollable").TrackpadScrollEmulator();
 
-	var favico = new Favico({
-		animation: "none"
+	Tinycon.setOptions({
+		width: 10,
+		height: 10,
+		background: '#d22'
 	});
 
 	function render(name, data) {
@@ -559,9 +561,7 @@ $(function() {
 			.data("count", "")
 			.empty();
 
-		if (sidebar.find(".highlight").length === 0) {
-			favico.badge("");
-		}
+		refreshUnreadCountInFavicon();
 
 		viewport.removeClass("lt");
 		$("#windows .active").removeClass("active");
@@ -669,7 +669,6 @@ $(function() {
 				if (settings.notification) {
 					pop.play();
 				}
-				favico.badge("!");
 				if (settings.badge && Notification.permission === "granted") {
 					var notify = new Notification(msg.from + " says:", {
 						body: msg.text.trim(),
@@ -687,10 +686,8 @@ $(function() {
 			}
 		}
 
-		button = button.filter(":not(.active)");
-		if (button.length === 0) {
-			return;
-		}
+		var wasMessageRead = button.filter(".active").length && document.visibilityState === "visible";
+		if (wasMessageRead) return;
 
 		var ignore = [
 			"join",
@@ -712,6 +709,8 @@ $(function() {
 				badge.addClass("highlight");
 			}
 		}
+
+		refreshUnreadCountInFavicon();
 	});
 
 	chat.on("click", ".show-more-button", function() {
@@ -970,9 +969,24 @@ $(function() {
 	document.addEventListener(
 		"visibilitychange",
 		function() {
-			if (sidebar.find(".highlight").length === 0) {
-				favico.badge("");
+			var chan = sidebar.find(".active");
+			if (chan.length > 0) {
+				chan.find(".badge").data("count", "").empty();
+				refreshUnreadCountInFavicon();
 			}
 		}
 	);
+
+	function refreshUnreadCountInFavicon() {
+		var count = sidebar
+			.find('.badge')
+			.map(function() {
+				return $(this).data('count') || 0;
+			})
+			.toArray()
+			.reduce(function(x, y) {
+				return x+y;
+			}, 0);
+		Tinycon.setBubble(count);
+	};
 });
