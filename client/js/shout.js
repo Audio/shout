@@ -659,30 +659,28 @@ $(function() {
 
 	chat.on("msg", ".messages", function(e, target, msg) {
 		var button = sidebar.find(".chan[data-target=" + target + "]");
-		var isQuery = button.hasClass("query");
-		var type = msg.type;
-		var highlight = type.contains("highlight");
-		var message = type.contains("message");
-		var settings = $.cookie("settings") || {};
-		if (highlight || isQuery || (settings.notifyAllMessages && message)) {
-			if (!document.hasFocus() || !$(target).hasClass("active")) {
-				if (settings.notification) {
-					pop.play();
-				}
-				if (settings.badge && Notification.permission === "granted") {
-					var notify = new Notification(msg.from + " says:", {
-						body: msg.text.trim(),
-						icon: "/img/logo-64.png"
-					});
-					notify.onclick = function() {
-						window.focus();
-						button.click();
-						this.close();
-					};
-					window.setTimeout(function() {
-						notify.close();
-					}, 5 * 1000);
-				}
+		var types = msg.type.split(" ");
+		var isNotificationType = types.indexOf("message") !== -1
+								|| types.indexOf("action") !== -1
+								|| types.indexOf("highlight") !== -1;
+		if (isNotificationType && (!document.hasFocus() || !$(target).hasClass("active"))) {
+			var settings = $.cookie("settings") || {};
+			if (settings.notification) {
+				pop.play();
+			}
+			if (settings.badge && Notification.permission == "granted") {
+				var notify = new Notification(msg.from, {
+					body: msg.text.trim(),
+					icon: "/img/logo-64.png"
+				});
+				notify.onclick = function() {
+					window.focus();
+					button.click();
+					this.close();
+				};
+				window.setTimeout(function() {
+					notify.close();
+				}, 4 * 1000);
 			}
 		}
 
@@ -696,11 +694,13 @@ $(function() {
 			"nick",
 			"mode",
 		];
-		if ($.inArray(type, ignore) !== -1){
+		if (ignore.indexOf(types[0]) !== -1){
 			return;
 		}
 
 		var badge = button.find(".badge");
+		var highlight = types.indexOf("highlight") !== -1;
+		var isQuery = button.hasClass("query");
 		if (badge.length !== 0) {
 			var i = (badge.data("count") || 0) + 1;
 			badge.data("count", i);
