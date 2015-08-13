@@ -11,6 +11,11 @@ var config = {};
 
 var sockets = null;
 var manager = new ClientManager();
+var afkNick = {
+	timeout: 5 * 60 * 1000, // ms
+	timeoutRef: null,
+	suffix: '|afk_od_'
+};
 
 module.exports = function(options) {
 	config = Helper.getConfig();
@@ -111,6 +116,40 @@ function init(socket, client, token) {
 		socket.emit("auth");
 		socket.on("auth", auth);
 	} else {
+		clearTimeout(afkNick.timeoutRef);
+
+		if (client.networks.length) {
+			var net = client.networks[0];
+			var nickParts = net.irc.me.split(afkNick.suffix);
+			if (nickParts.length > 1) {
+				var nick = nickParts[0];
+				console.log(new Date, 'remove AFK nickname', nick);
+				net.irc.nick(nick);
+			}
+		}
+
+		socket.on(
+			"disconnect",
+			function() {
+				if (!client.networks.length) return;
+				if (client.sockets.eio.clientsCount > 0) return;
+
+				var now = new Date,
+					hours = now.getHours(),
+					mins = now.getMinutes();
+				if (hours < 10) hours = '0' + hours;
+				if (mins  < 10) mins  = '0' + mins;
+
+				var net = client.networks[0];
+				var nick = net.irc.me + afkNick.suffix + hours + '_' + mins;
+
+				clearTimeout(afkNick.timeoutRef);
+				afkNick.timeoutRef = setTimeout(function() {
+					console.log(new Date, 'set AFK nickname', nick);
+					net.irc.nick(nick);
+				}, afkNick.timeout);
+			}
+		);
 		socket.on(
 			"input",
 			function(data) {
