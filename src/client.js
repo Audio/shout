@@ -149,6 +149,7 @@ Client.prototype.connect = function(args) {
 		client.emit("msg", {
 			msg: msg
 		});
+		process.exit(1);
 	});
 
 	var nick = args.nick || "shout-user";
